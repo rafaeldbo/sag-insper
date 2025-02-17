@@ -9,8 +9,9 @@
     "lint": "eslint .",
     "preview": "vite preview",
     "predeploy" : "npm run build",
-    "deploy" : "gh-pages -d build"
+    "deploy" : "gh-pages -d dist"
   },
+  "homepage": "https://rafaeldbo.github.io/sag-insper",
   "dependencies": {
     "dotenv": "^16.4.7",
     "file-saver": "^2.0.5",

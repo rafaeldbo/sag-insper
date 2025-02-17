@@ -43,12 +43,6 @@ export default class ActivityDatabase {
 
   constructor(setData: React.Dispatch<React.SetStateAction<ActivityDataOrganized>>) {
     this.setData = setData;
-    this.syncData().then(data => {
-      if (data) {
-        this.database = data;
-        this.setData(parseActivityData(Object.values(data.data)));
-      };
-    });
   };
 
   private genUniqueID(length:number=10): string {
@@ -66,12 +60,15 @@ export default class ActivityDatabase {
     return id;
   };
 
-  private async syncData() {
+  async syncData() {
     try {
       const docSnapshot = await getDoc(doc(db, this.collectionName, this.collectionID));
       if (docSnapshot.exists()) {
         const dataRaw = docSnapshot.data();
-        return { data: JSON.parse(dataRaw.data), lastUpdate: dataRaw.last_update };
+        const data = { data: JSON.parse(dataRaw.data), lastUpdate: dataRaw.last_update };
+        this.database = data;
+        this.setData(parseActivityData(Object.values(data.data)));
+        return ;
       };
     } catch (e) {
       console.error('error when collecting a document: ', e);
@@ -81,15 +78,14 @@ export default class ActivityDatabase {
   
   async add(newData: ActivityData) {
     try {
-      this.syncData().then(data => {
-        if (data) {
-          this.database = data;
-          newData.id = this.genUniqueID();
-          this.database.data[newData.id] = newData;
-          this.database.lastUpdate = Timestamp.now();
-          this.setData(parseActivityData(Object.values(data.data)));
-        };
-      });
+      await this.syncData();
+
+      newData.id = this.genUniqueID();
+      this.database.data[newData.id] = newData;
+
+      this.database.lastUpdate = Timestamp.now();
+      this.setData(parseActivityData(Object.values(this.database.data)));
+      
       const docRef = doc(db, this.collectionName, this.collectionID);
       const data = { data: JSON.stringify(this.database.data), last_update: this.database.lastUpdate };
       await updateDoc(docRef, data);
@@ -102,14 +98,13 @@ export default class ActivityDatabase {
 
   async update(id: string, updatingData: Partial<ActivityData>) {
     try {
-      this.syncData().then(data => {
-        if (data) {
-          this.database = data;
-          this.database.data[id] = { ...this.database.data[id], ...updatingData };
-          this.database.lastUpdate = Timestamp.now();
-          this.setData(parseActivityData(Object.values(data.data)));
-        };
-      });
+      this.syncData()
+
+      this.database.data[id] = { ...this.database.data[id], ...updatingData };
+
+      this.database.lastUpdate = Timestamp.now();
+      this.setData(parseActivityData(Object.values(this.database.data)));
+
       const docRef = doc(db, this.collectionName, this.collectionID);
       const data = { data: JSON.stringify(this.database.data), last_update: this.database.lastUpdate };
       await updateDoc(docRef, data);
@@ -122,14 +117,13 @@ export default class ActivityDatabase {
 
   async delete(id: string) {
     try {
-      this.syncData().then(data => {
-        if (data) {
-          this.database = data;
-          delete this.database.data[id]
-          this.database.lastUpdate = Timestamp.now();
-          this.setData(parseActivityData(Object.values(data.data)));
-        };
-      });
+      this.syncData()
+
+      delete this.database.data[id]
+
+      this.database.lastUpdate = Timestamp.now();
+      this.setData(parseActivityData(Object.values(this.database.data)));
+
       const docRef = doc(db, this.collectionName, this.collectionID);
       const data = { data: JSON.stringify(this.database.data), last_update: this.database.lastUpdate };
       await updateDoc(docRef, data);

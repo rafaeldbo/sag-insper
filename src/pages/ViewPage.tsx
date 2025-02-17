@@ -18,6 +18,7 @@ export default function ViewPage() {
 
     useEffect(() => {
         database = new ActivityDatabase(setOrganizedData);
+        database.syncData();
     }, []);
 
     return (

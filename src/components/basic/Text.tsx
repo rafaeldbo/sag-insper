@@ -14,7 +14,7 @@ export default function Text({ children, style="default", color="black", size=12
   const textStyles:CSS.Properties = {
     color: color,
     fontSize: `${size}pt`,
-    verticalAlign: verticalAlign,
+    margin: `${(['top', 'middle'].includes(verticalAlign)) ? 'auto' : 0} 0 ${(['bottom', 'middle'].includes(verticalAlign)) ? 'auto' : 0} 0`,
     textAlign: horizontalAlign,
     fontStyle: (style.includes("italic") ? "italic" : "normal"),
     textDecoration: (style.includes("underline") ? "underline" : "none"),

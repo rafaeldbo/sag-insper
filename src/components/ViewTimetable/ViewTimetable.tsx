@@ -34,7 +34,7 @@ const disciplineColors = [
     return (
         <div style={{...styles.floatingSlot, ...position }}>
             <Text style="bold" size={8} verticalAlign="middle" horizontalAlign="center" containerStyle={styles.margin}>
-              {startHour} às {endHour}
+              {startHour}<br/>às<br/>{endHour}
             </Text>
         </div>
     );
