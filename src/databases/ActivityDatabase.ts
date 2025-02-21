@@ -1,136 +1,111 @@
-import { getDoc, doc, updateDoc, Timestamp } from 'firebase/firestore';
+import axios from 'axios';
 
-import { db } from '../settings';
-import { ActivityData, ActivityDataOrganized } from '../globalTypes';
+import { Activity, ActivityData, ActivityDataOrganized } from '../globalTypes';
 
-export function validateActivityData(data: ActivityData) {
-  const requiredKeys = ["cod_turma", "curso", "serie", "turma", "dia_semana", "hora_fim", "hora_inicio", "nome_disciplina", "tipo_atividade", "docentes", "cor", "posicao"];
+export function validateActivityData(data: Activity) {;
+  const requiredKeys = ["curso", "serie", "turma", "dia_semana", "hora_fim", "hora_inicio", "nome_disciplina", "tipo_atividade", "docentes"];
+  const allKeys = [...requiredKeys, "id", "cod_turma", "cor", "posicao"];
 
   for (const key of requiredKeys) {
-    if (!Object.prototype.hasOwnProperty.call(data, key)) {
+    if (!Object.keys(data).includes(key)) {
+      return false;
+    };
+  };
+  for (const key in Object.keys(data)) {
+    if (!allKeys.includes(key)) {
       return false;
     };
   };
   return true;
 };
 
-export function parseActivityData(data: ActivityData[]) {
-  const organizedData: { [key: string]: { [key: string]: ActivityData[] } } = {};
+export function parseActivityData(data: Activity[]) {
+  const organizedData: { [key: string]: { [key: string]: Activity[] } } = {};
 
-  data.forEach((slot: ActivityData) => {
-    if (!organizedData[slot.cod_turma]) {
-      organizedData[slot.cod_turma] = {};
+  data.forEach((activity: Activity) => {
+    if (!organizedData[activity.cod_turma]) {
+      organizedData[activity.cod_turma] = {};
     }
-    if (!organizedData[slot.cod_turma][slot.dia_semana]) {
-      organizedData[slot.cod_turma][slot.dia_semana] = [];
+    if (!organizedData[activity.cod_turma][activity.dia_semana]) {
+      organizedData[activity.cod_turma][activity.dia_semana] = [];
     }
-    organizedData[slot.cod_turma][slot.dia_semana].push(slot);
+    organizedData[activity.cod_turma][activity.dia_semana].push(activity);
   });
 
   return organizedData;
 };
 
-interface Data {
-  data: { [key: string]:  ActivityData };
-  lastUpdate: Timestamp;
-};
-
 export default class ActivityDatabase {
-  private collectionName: string = "activities_raw";
-  private collectionID: string = "unique";
-  private database: Data = { data: {}, lastUpdate: Timestamp.fromMillis(0) };
+  private backendURL: string = import.meta.env.VITE_APP_BACKEND_URL as string;
+  private endpoint: string = "activity";
+  private data : { [key: string]: Activity } = {};
   private setData: React.Dispatch<React.SetStateAction<ActivityDataOrganized>>;
+  private setLog: React.Dispatch<React.SetStateAction<{ status: number, message: string }>>;
 
-  constructor(setData: React.Dispatch<React.SetStateAction<ActivityDataOrganized>>) {
+  constructor(
+    setData: React.Dispatch<React.SetStateAction<ActivityDataOrganized>>,
+    setLog: React.Dispatch<React.SetStateAction<{ status: number, message: string }>>
+  ) {
     this.setData = setData;
-  };
-
-  private genUniqueID(length:number=10): string {
-    const characters = 'ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789';
-    let id = '';
-    while (true) {
-      for (let i = 0; i < length; i++) {
-        const randomIndex = Math.floor(Math.random() * characters.length);
-        id += characters.charAt(randomIndex);
-      };
-      if (this.database.data[id] === undefined) {
-        break;
-      };
-    };
-    return id;
+    this.setLog = setLog;
   };
 
   async syncData() {
-    try {
-      const docSnapshot = await getDoc(doc(db, this.collectionName, this.collectionID));
-      if (docSnapshot.exists()) {
-        const dataRaw = docSnapshot.data();
-        const data = { data: JSON.parse(dataRaw.data), lastUpdate: dataRaw.last_update };
-        this.database = data;
-        this.setData(parseActivityData(Object.values(data.data)));
-        return ;
-      };
-    } catch (e) {
-      console.error('error when collecting a document: ', e);
-      throw e;
-    };
+    return axios.get(`${this.backendURL}/${this.endpoint}/`)
+        .then((response) => {
+          const data = response.data as Activity[];
+          this.data = data.reduce((obj, activity) => {
+            obj[activity.id] = activity;
+            return obj;
+          }, {} as { [key: string]: Activity });
+          this.setData(parseActivityData(Object.values(this.data)));
+        })
+        .catch((error) => {
+          console.error('error when syncing data: ', error);
+          this.setLog({ status: error.response.status, message: error.response.data });
+        });
   };
   
-  async add(newData: ActivityData) {
-    try {
-      await this.syncData();
-
-      newData.id = this.genUniqueID();
-      this.database.data[newData.id] = newData;
-
-      this.database.lastUpdate = Timestamp.now();
-      this.setData(parseActivityData(Object.values(this.database.data)));
-      
-      const docRef = doc(db, this.collectionName, this.collectionID);
-      const data = { data: JSON.stringify(this.database.data), last_update: this.database.lastUpdate };
-      await updateDoc(docRef, data);
-      return docRef.id;
-    } catch (e) {
-      console.error('error when adding a document: ', e);
-      throw e;
-    };
+  async create(newData: ActivityData) {
+    return axios.post(`${this.backendURL}/${this.endpoint}/`, newData)
+    .then((response) => {
+      if (response.status !== 200) return response.data;
+      const data = response.data as Activity;
+      this.data[data.id] = data;
+      this.setData(parseActivityData(Object.values(this.data)));
+      return data;
+    })
+    .catch((error) => {
+      console.error('error when adding a activity: ', error);
+      this.setLog({ status: error.response.status, message: error.response.data });
+    });
   };
 
   async update(id: string, updatingData: Partial<ActivityData>) {
-    try {
-      this.syncData()
-
-      this.database.data[id] = { ...this.database.data[id], ...updatingData };
-
-      this.database.lastUpdate = Timestamp.now();
-      this.setData(parseActivityData(Object.values(this.database.data)));
-
-      const docRef = doc(db, this.collectionName, this.collectionID);
-      const data = { data: JSON.stringify(this.database.data), last_update: this.database.lastUpdate };
-      await updateDoc(docRef, data);
-      return docRef.id;
-    } catch (e) {
-      console.error('error when updating a document: ', e);
-      throw e;
-    };
+    axios.patch(`${this.backendURL}/${this.endpoint}/${id}/`, updatingData)
+      .then((response) => {
+        if (response.status !== 200) return response.data;
+        const data = response.data as Activity;
+        this.data[data.id] = data;
+        this.setData(parseActivityData(Object.values(this.data)));
+        return data;
+      })
+      .catch((error) => {
+        console.error('error when updating a activity: ', error);
+        this.setLog({ status: error.response.status, message: error.response.data });
+      });
   };
 
   async delete(id: string) {
-    try {
-      this.syncData()
-
-      delete this.database.data[id]
-
-      this.database.lastUpdate = Timestamp.now();
-      this.setData(parseActivityData(Object.values(this.database.data)));
-
-      const docRef = doc(db, this.collectionName, this.collectionID);
-      const data = { data: JSON.stringify(this.database.data), last_update: this.database.lastUpdate };
-      await updateDoc(docRef, data);
-      return docRef.id;
-    } catch (e) {
-      console.error('error when deleting a document: ', e);
-      throw e;
-    };
+    return axios.delete(`${this.backendURL}/${this.endpoint}/${id}/`)
+      .then((response) => {
+        if (response.status !== 200) return response.data;
+        delete this.data[id];
+        this.setData(parseActivityData(Object.values(this.data)));
+      })
+      .catch((error) => {
+        console.error('error when deleting a activity: ', error);
+        this.setLog({ status: error.response.status, message: error.response.data });
+      });
   };
 };

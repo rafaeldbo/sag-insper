@@ -3,21 +3,20 @@
   "private": true,
   "version": "0.0.0",
   "type": "module",
+  "homepage": "https://sag-insper.onrender.com/",
   "scripts": {
     "dev": "vite",
     "build": "tsc -b && vite build",
     "lint": "eslint .",
-    "preview": "vite preview",
-    "predeploy" : "npm run build",
-    "deploy" : "gh-pages -d dist"
+    "preview": "vite preview"
   },
-  "homepage": "https://rafaeldbo.github.io/sag-insper",
   "dependencies": {
+    "axios": "^1.7.9",
     "dotenv": "^16.4.7",
     "file-saver": "^2.0.5",
-    "firebase": "^11.3.1",
     "react": "^19.0.0",
     "react-dom": "^19.0.0",
+    "react-router-dom": "^7.1.5",
     "xlsx": "^0.18.5"
   },
   "devDependencies": {
@@ -29,7 +28,6 @@
     "eslint": "^9.19.0",
     "eslint-plugin-react-hooks": "^5.0.0",
     "eslint-plugin-react-refresh": "^0.4.18",
-    "gh-pages": "^6.3.0",
     "globals": "^15.14.0",
     "typescript": "~5.7.2",
     "typescript-eslint": "^8.22.0",

@@ -1,3 +1,5 @@
+import { BrowserRouter, Routes, Route } from "react-router-dom";
+
 import ViewPage from './pages/ViewPage';
 
 import GlobalStyles from './globalStyles';
@@ -5,7 +7,11 @@ import GlobalStyles from './globalStyles';
 const App: React.FC = () => {
   return (
     <div className="App" style={GlobalStyles.global}>
-      <ViewPage />
+      <BrowserRouter>
+        <Routes>
+          <Route path="/" element={<ViewPage />} />
+        </Routes>
+      </BrowserRouter>
     </div>
   );
 };

@@ -2,7 +2,7 @@ import { useState } from "react";
 
 import * as XLSX from "xlsx"
 
-import { ActivityData } from "../../globalTypes";
+import { Activity } from "../../globalTypes";
 import { ExcelInputProps } from "./types";
 import { colors } from "../../globalStyles";
 import styles from "./styles";
@@ -27,7 +27,7 @@ export default function ExcelInput({ setData }: ExcelInputProps) {
       const workbook = XLSX.read(arrayBuffer, { type: "array" });
       const sheetName = workbook.SheetNames[0];
       const sheet = workbook.Sheets[sheetName];
-      const jsonData: ActivityData[] = XLSX.utils.sheet_to_json(sheet);
+      const jsonData: Activity[] = XLSX.utils.sheet_to_json(sheet);
       
       if (!validateActivityData(jsonData[0])) {
         setWarningText("Planilha inválida");

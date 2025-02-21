@@ -1,12 +1,12 @@
 import { parseTime } from "../../utils";
-import { ActivityData } from "../../globalTypes";
+import { Activity } from "../../globalTypes";
 
 import { colors, LineHeight } from "../../globalStyles";
 import styles from  "./styles";
 
 import Text from "../basic/Text";
 
-const weekDays = ["SEGUNDA-FEIRA", "TERÇA-FEIRA", "QUARTA-FEIRA", "QUINTA-FEIRA", "SEXTA-FEIRA", "SÁBADO", "DOMINGO"];
+const weekDays = ["SEGUNDA-FEIRA", "TERÇA-FEIRA", "QUARTA-FEIRA", "QUINTA-FEIRA", "SEXTA-FEIRA"];
 
 const disciplineColors = [
     colors.lightOrange,
@@ -41,7 +41,7 @@ const disciplineColors = [
 };
 
 
-function ActivitySlot(props: { data: ActivityData }) {
+function ActivitySlot(props: { data: Activity }) {
     const { data: slotData } = props;
   
     const startTime = parseTime(slotData.hora_inicio);
@@ -83,7 +83,7 @@ function ActivitySlot(props: { data: ActivityData }) {
 };
 
 
-export default function ViewTimetable(props: { data: {[key: string]: ActivityData[]} }) {
+export default function Timetable(props: { data: {[key: string]: Activity[]} }) {
   const { data } = props;
 
   return (
@@ -100,7 +100,7 @@ export default function ViewTimetable(props: { data: {[key: string]: ActivityDat
         </div>
       </div>
       {weekDays.map((weekDay) => {
-        const activities = data[weekDay];
+        const activities = data[weekDay] || [] as Activity[];
         if (activities) {
           return (
             <div key={weekDay} style={styles.timetableColumn}>
