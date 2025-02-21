@@ -23,7 +23,7 @@ export default function ViewPage() {
 
     return (
         <div style={styles.container}>
-            <Text style="bold">Carregando...</Text>
+            {(Object.keys(organizedData).length === 0) && <Text style="bold">Carregando...</Text>}
             {(Object.keys(organizedData).length !== 0) && <>
                 <DataFilter setData={setFilter}/>
                 {(organizedData[filter] !== undefined) &&
