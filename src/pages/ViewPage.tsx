@@ -23,6 +23,7 @@ export default function ViewPage() {
 
     return (
         <div style={styles.container}>
+            <Text style="bold">Carregando...</Text>
             {(Object.keys(organizedData).length !== 0) && <>
                 <DataFilter setData={setFilter}/>
                 {(organizedData[filter] !== undefined) &&
@@ -30,6 +31,7 @@ export default function ViewPage() {
                 {(organizedData[filter] === undefined && filter !== "") &&
                 <Text>Não há nenhuma grade registrada para esse filtro</Text>}
             </>}
+            {(logData.status !== 0) && <Text>{logData.message}</Text>}
         </div>
     );
 }
